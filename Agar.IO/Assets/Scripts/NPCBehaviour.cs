@@ -7,84 +7,129 @@ public class NPCBehaviour : MonoBehaviour
 {
     private Rigidbody2D rb;
     private Transform tm;
-    private Transform startMovement;
+    [HideInInspector] public string NPCNickName;
     private Vector3 endMovement;
-    private Vector3[] directions = {Vector3.down, Vector3.up, Vector3.left, Vector3.right, Vector3.up+Vector3.left,
-                                    Vector3.left+Vector3.down, Vector3.down+ Vector3.right, Vector3.right+ Vector3.up};
-    [Range(0f, 20f)] public float currentSpeed = 5f;
-    private float speed = 50f;
-    private float timeForDecision;
-    private float startTime;
+    private Vector3[] directions = {Vector3.down, Vector3.down + Vector3.left, Vector3.down + Vector3.right,
+                                    Vector3.up, Vector3.up + Vector3.left, Vector3.up + Vector3.right,
+                                    Vector3.left, Vector3.right};
+    private Vector3 movingDirection;
+    private float currentSpeed;
+    private float speed = 10f;
     private float distance;
-
-    //[SerializeField] private CinemachineVirtualCamera virtualCam;
+    private float distCovered;
+    private float fracJourney;
+    private bool goingForFood;
 
     // Start is called before the first frame update
-    void Start()
+    void OnEnable()
     {
         rb = GetComponent<Rigidbody2D>();
         tm = GetComponent<Transform>();
-        startTime = Time.deltaTime;
-        timeForDecision = Random.Range(1,5);
-        endMovement = tm.position + (directions[Random.Range(0, 8)] * currentSpeed);
-        //print(new Vector3(1f, 1f) * 7);
+        goingForFood = false;
+        InvokeRepeating("getNewDirection", 0f, 2f);
     }
-
-    // Update is called once per frame
+   
     void Update()
     {
-
-        distance = Vector3.Distance(endMovement, tm.position);
-        float distCovered = (Time.deltaTime - startTime) * speed;
-        float fracJourney = distCovered / distance;
-
-
-        if (timeForDecision > 0)
-            timeForDecision -= Time.deltaTime;
-        else
-        {
-            //rb.velocity = directions[Random.Range(0, 8)] * currentSpeed;
-            transform.position = Vector3.Lerp(transform.position, endMovement, fracJourney);
-        }
-
-        if (tm.localScale.x >= 16)
-        {
-            //GameManagerBehaviour.instance.divideItself(tm.localScale);
-            tm.localScale -= tm.localScale / 2;
-        }
-
-        // VERIFICAR A FORMULA PARA VELOCIDADE TA ESTRANHO A PROGRESSÃO 
-        currentSpeed = speed / (tm.localScale.x / 2);
-
+        currentSpeed = speed - (Mathf.Sqrt(tm.localScale.x));
     }
 
     void FixedUpdate()
     {
-        //rb.velocity = new Vector3(Random.Range(0f,1f), Random.Range(0f, 1f)) * currentSpeed;
+        rb.MovePosition(tm.position + movingDirection * currentSpeed * Time.deltaTime);
+    }
 
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        Transform npcTm = collision.collider.GetComponent<Transform>();
+
+        if (collision.collider.name == "Food(Clone)")
+        {
+            collision.gameObject.SetActive(false);
+            FoodSpawnerBehaviour.instance.reactivateFood();
+            tm.localScale += new Vector3(1f, 1f);
+            goingForFood = false;
+            GameManagerBehaviour.instance.addToList(NPCNickName);
+        }
+
+        if (collision.collider.CompareTag("Wall"))
+            movingDirection = -movingDirection;
+
+        if (collision.collider.CompareTag("NPC"))
+        {
+            if (tm.localScale.x > (npcTm.localScale.x) * 1.3)
+            {
+                tm.localScale += npcTm.localScale / 3;
+                collision.gameObject.SetActive(false);
+                NPCSpawnerBehaviour.instance.reactivateNPC();
+                GameManagerBehaviour.instance.addToList(NPCNickName, (int)tm.localScale.x / 3);
+            }
+            else if (tm.localScale.x * 1.3 < (npcTm.localScale.x))
+            {
+                npcTm.localScale += tm.localScale / 3;
+                gameObject.SetActive(false);
+                NPCSpawnerBehaviour.instance.reactivateNPC();
+                GameManagerBehaviour.instance.addToList(collision.gameObject.GetComponent<NPCBehaviour>().NPCNickName, (int)tm.localScale.x / 3);
+            }
+        }
+    }
+
+    private void getNewDirection()
+    {
+        if (!goingForFood)
+            movingDirection = directions[Random.Range(0, 8)];
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        //print(collision.name);
-        if (collision.name == "Food(Clone)")
+        Transform colTransf = collision.GetComponent<Transform>();
+
+        if (collision.name == "Food(Clone)" && !goingForFood)
         {
-            Destroy(collision.gameObject);
-            tm.localScale += new Vector3(1f, 1f);
+            // 20% de chance do NPC não ir em direção a comida
+            if (Random.Range(0f, 1f) > .2)
+            {
+                movingDirection =  (colTransf.position - tm.position).normalized;
+                goingForFood = true;
+            }
+        }
+
+        if (collision.CompareTag("Player") || collision.CompareTag("PlayerClone") || collision.CompareTag("NPC"))
+        {
+            // 5% de chance de ser suicida
+            if (colTransf.localScale.x * 1.2 > tm.localScale.x)
+                movingDirection = Random.Range(0f, 1f) > .95 ? (colTransf.position - tm.position).normalized : -(colTransf.position - tm.position).normalized;
+            else if (colTransf.localScale.x < tm.localScale.x * 1.2)
+            {
+                movingDirection = (colTransf.position - tm.position).normalized;
+                //if (gameObject.CompareTag("NPC"))
+                //{
+
+                //    if (Random.Range(0f, 1f) > .80)
+                //    {
+                //        //GameManagerBehaviour.instance.divideItself
+                //        //if (tm.localScale.x >= 16)
+                //        //{
+                //        GameManagerBehaviour.instance.divideNPC(colTransf);
+                //        tm.localScale -= tm.localScale / 2;
+                //        //}
+                //    }
+
+                //}
+            }
         }
     }
 
-    
-
-    //public Vector3 getDirection()
+    // PROBLEMA AQUI, NÃO CONSEGUI FAZER O NPC SE PROPULSAR NO INIMIGO
+    //public void divideNPC(Transform enemy)
     //{
-    //    mousePos = virtualCam.GetComponentInParent<Camera>().ScreenToWorldPoint(Input.mousePosition);
-    //    Vector3 heroPos = tm.position;
+    //    Vector3 positionToSpawnClone = enemy.position - npc.transform.position;
 
-    //    Vector3 heading = mousePos - heroPos;
-    //    float distance = heading.magnitude;
-    //    Vector3 direction = heading / distance;
+    //    GameObject npcClone = Instantiate<GameObject>(npcPrefab, npc.transform.position + positionToSpawnClone, new Quaternion());
+    //    npcClone.transform.localScale = npc.transform.localScale / 2;
+    //    npcClone.tag = "NPCClone";
 
-    //    return direction;
+    //    StartCoroutine(burstOfSpeed(npcClone));
     //}
+
 }

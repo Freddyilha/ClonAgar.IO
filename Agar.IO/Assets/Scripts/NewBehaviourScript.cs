@@ -20,6 +20,6 @@ public class NewBehaviourScript : MonoBehaviour
     {
         Gizmos.color = Color.blue;
         //Use the same vars you use to draw your Overlap SPhere to draw your Wire Sphere.
-        Gizmos.DrawWireSphere(GetComponent<Transform>().position, 0.28f);
+        Gizmos.DrawWireSphere(GetComponent<Transform>().position, 0.75f);
     }
 }
