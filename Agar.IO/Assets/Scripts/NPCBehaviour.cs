@@ -100,31 +100,17 @@ public class NPCBehaviour : MonoBehaviour
 
         if (collision.CompareTag("Player") || collision.CompareTag("PlayerClone") || collision.CompareTag("NPC"))
         {
-            // 5% de chance de ser suicida
+            // 1% de chance de ser suicida
             if (colTransf.localScale.x * 1.2 > tm.localScale.x)
-                movingDirection = Random.Range(0f, 1f) > .95 ? (colTransf.position - tm.position).normalized : -(colTransf.position - tm.position).normalized;
+                movingDirection = Random.Range(0f, 1f) > .99 ? (colTransf.position - tm.position).normalized : -(colTransf.position - tm.position).normalized;
             else if (colTransf.localScale.x < tm.localScale.x * 1.2)
             {
-                movingDirection = (colTransf.position - tm.position).normalized;
-                //if (gameObject.CompareTag("NPC"))
-                //{
-
-                //    if (Random.Range(0f, 1f) > .80)
-                //    {
-                //        //GameManagerBehaviour.instance.divideItself
-                //        //if (tm.localScale.x >= 16)
-                //        //{
-                //        GameManagerBehaviour.instance.divideNPC(colTransf);
-                //        tm.localScale -= tm.localScale / 2;
-                //        //}
-                //    }
-
-                //}
+                movingDirection = -(colTransf.position - tm.position).normalized;
             }
         }
     }
 
-    // PROBLEMA AQUI, NÃO CONSEGUI FAZER O NPC SE PROPULSAR NO INIMIGO
+    //não consegui fazer o npc se dividir e manter juntos
     //public void divideNPC(Transform enemy)
     //{
     //    Vector3 positionToSpawnClone = enemy.position - npc.transform.position;

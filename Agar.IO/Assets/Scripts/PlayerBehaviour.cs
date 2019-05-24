@@ -18,7 +18,6 @@ public class PlayerBehaviour : MonoBehaviour
     public static float NPCsEaten;
     public static int topPosition;
     public static float timeOnLeaderboard;
-    public bool dividing;
 
     void Start()
     {
@@ -41,7 +40,6 @@ public class PlayerBehaviour : MonoBehaviour
             topPosition = 100;
             NPCsEaten = 0;
             startingTime = Time.time;
-            dividing = false;
             GameManagerBehaviour.instance.nameChosen = false;
         }
     }
@@ -91,7 +89,6 @@ public class PlayerBehaviour : MonoBehaviour
         Vector3[] positionsToSpawnClones = { Vector2.up, Vector2.down, Vector2.left, Vector2.right, Vector2.up + Vector2.right, Vector2.down + Vector2.left };
         for (int i = 0; i < 6; i++)
         {
-            //GameObject playerClone = Instantiate<GameObject>(playerPrefab, player.transform.position + positionsToSpawnClones[i], new Quaternion());
             GameObject playerClone = GameManagerBehaviour.instance.createClone(mainPlayer.position);
             playerClone.transform.localScale = mainPlayer.localScale / 6;
             playerClone.tag = "PlayerClone";
@@ -108,7 +105,7 @@ public class PlayerBehaviour : MonoBehaviour
             foodGrabed += 1;
             tm.localScale += new Vector3(1f,1f);
             GameManagerBehaviour.instance.updateFoodCounterUI();
-            GameManagerBehaviour.instance.increaseCameraSize();
+            GameManagerBehaviour.instance.increaseCameraSize(1);
             GameManagerBehaviour.instance.addToList(nickName);
             GameManagerBehaviour.instance.updateHighScoreTable();
         }
@@ -116,7 +113,7 @@ public class PlayerBehaviour : MonoBehaviour
         if (collision.collider.name == "NPC(Clone)" || collision.collider.name == "NPC")
         {
             Transform npcTm = collision.collider.GetComponent<Transform>();
-            if (tm.localScale.x > (npcTm.localScale.x)*1.3)
+            if (tm.localScale.x > (npcTm.localScale.x)*1.2)
             {
                 NPCsEaten += 1;
                 tm.localScale += npcTm.localScale/3;
@@ -124,16 +121,18 @@ public class PlayerBehaviour : MonoBehaviour
                 SpawnerBehaviour.instance.reactivateNPC();
                 GameManagerBehaviour.instance.addToList(nickName, (int)tm.localScale.x/3);
                 GameManagerBehaviour.instance.updateHighScoreTable();
+                GameManagerBehaviour.instance.increaseCameraSize((int)(npcTm.localScale.x / 6));
             }
-            else if (tm.localScale.x * 1.3 < (npcTm.localScale.x))
+            else if (tm.localScale.x * 1.2 < (npcTm.localScale.x))
             {
                 npcTm.localScale += tm.localScale / 3;
 
                 if (playerDict.Count == 1)
                 {
                     startingTime = (Time.time - startingTime);
-                    //Destroy(gameObject);
+                    
                     gameObject.SetActive(false);
+                    GameManagerBehaviour.instance.changeCameraFollow(npcTm);
                     GameManagerBehaviour.instance.onGameOver();
                     GameManagerBehaviour.instance.resetIndividualScore(nickName);
                     GameManagerBehaviour.instance.updateHighScoreTable();

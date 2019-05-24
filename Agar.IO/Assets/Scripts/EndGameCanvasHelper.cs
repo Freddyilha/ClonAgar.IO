@@ -12,21 +12,13 @@ public class EndGameCanvasHelper : MonoBehaviour
     public TextMeshProUGUI cellsEaten;
     public TextMeshProUGUI topPosition;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void onRestartButtonPressed()
     {
         StartCoroutine(GameManagerBehaviour.instance.waitForLogin());
+    }
+
+    public void onQuitButtonPressed()
+    {
+        Application.Quit();
     }
 }

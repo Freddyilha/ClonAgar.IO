@@ -28,7 +28,7 @@ public class SpawnerBehaviour : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        maxAvaiableNPCs = 50;
+        maxAvaiableNPCs = 75;
         NPCPool = new List<GameObject>();
         for (int i = 0; i < maxAvaiableNPCs; i++)
         {

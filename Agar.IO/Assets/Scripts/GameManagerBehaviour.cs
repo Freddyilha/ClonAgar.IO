@@ -27,7 +27,7 @@ public class GameManagerBehaviour : MonoBehaviour
     private GameObject playerHighScore;
     public GameObject highScoreCellPrefab;
     private bool updatingHighScore;
-    public bool nameChosen;
+    [HideInInspector] public bool nameChosen;
 
     void Awake()
     {
@@ -47,13 +47,7 @@ public class GameManagerBehaviour : MonoBehaviour
         virtualCam = mainCamera.GetComponentInChildren<CinemachineVirtualCamera>();
         player = Instantiate<GameObject>(playerPrefab);
         player.SetActive(false);
-        //activeCanvas = Instantiate<Canvas>(loginCanvasPrefab);
         StartCoroutine(waitForLogin());
-    }
-
-    void Update()
-    {
-        //mouseDistanceFromCenter = (Vector2)virtualCam.GetComponentInParent<Camera>().ScreenToViewportPoint(Input.mousePosition) - new Vector2(0.5f, 0.5f);
     }
 
     public void updateHighScoreTable()
@@ -142,24 +136,15 @@ public class GameManagerBehaviour : MonoBehaviour
         }
     }
 
-    public void increaseCameraSize()
+    // Para cada 1 de tamanho aumentado a camera se distancia .5
+    public void increaseCameraSize(int multiplier)
     {
-        virtualCam.m_Lens.OrthographicSize += .05f;
-    }
-
-    public void decreaseCameraSize()
-    {
-        virtualCam.m_Lens.OrthographicSize -= .05f;
+        virtualCam.m_Lens.OrthographicSize += .05f * multiplier;
     }
 
     public void changeCameraFollow(Transform playerToFollow)
     {
         virtualCam.Follow = playerToFollow;
-    }
-
-    private void OnApplicationQuit()
-    {
-        Destroy(gameObject);
     }
 
     public IEnumerator waitForLogin()
@@ -188,8 +173,9 @@ public class GameManagerBehaviour : MonoBehaviour
 
         player.transform.position = findAnEmptySpot();
         player.gameObject.SetActive(true);
-
         virtualCam.Follow = player.transform;
+
+        //NetworkManagerBehaviour.instance.sendPosition(player.transform.position);
 
         Destroy(activeCanvas.gameObject);
         activeCanvas = Instantiate<Canvas>(gameCanvasPrefab);
