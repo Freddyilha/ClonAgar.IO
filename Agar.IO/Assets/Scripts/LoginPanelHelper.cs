@@ -24,12 +24,17 @@ public class LoginPanelHelper : MonoBehaviour
 
     public void onGuestButtonPressed()
     {
-        GameManagerBehaviour.instance.startNewGame("Guest");
+        GameManagerBehaviour.instance.nameChosen = true;
+        PlayerBehaviour.nickName = "Guest";
+        StartCoroutine(GameManagerBehaviour.instance.waitForLogin());
+
     }
 
     public void onLoginButtonPressed()
     {
-        GameManagerBehaviour.instance.startNewGame(usernameInput.text);
+        GameManagerBehaviour.instance.nameChosen = true;
+        PlayerBehaviour.nickName = usernameInput.text;
+        StartCoroutine(GameManagerBehaviour.instance.waitForLogin());
     }
 
 }

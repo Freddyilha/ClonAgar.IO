@@ -8,36 +8,42 @@ public class PlayerBehaviour : MonoBehaviour
 {
     private Rigidbody2D rb;
     private Transform tm;
-    [HideInInspector] public string nickName;
+    [HideInInspector] public static string nickName;
     [HideInInspector] public static int foodGrabed = 0;
     private float currentSpeed;
     [HideInInspector] public float speed;
-    private static Dictionary<int, GameObject> playerDict;
+    private static Dictionary<int, GameObject> playerDict = new Dictionary<int, GameObject>();
     public static float startingTime;
     public static float highestMass;
     public static float NPCsEaten;
     public static int topPosition;
     public static float timeOnLeaderboard;
+    public bool dividing;
 
-    // Start is called before the first frame update
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         tm = GetComponent<Transform>();
-        if (gameObject.CompareTag("Player"))    // If usado para não permitir os clones alterarem esses valores
-        {
-            timeOnLeaderboard = 0;
-            topPosition = 100;
-            NPCsEaten = 0;
-            startingTime = Time.time;
-            playerDict = new Dictionary<int, GameObject>();
-        }
         speed = gameObject.CompareTag("PlayerClone") ? 60f : 20f;   /* Não achei o motivo quando o clone é criado ele esta começando com 0 de 'speed',
                                                                      porém, isso não estava acontecendo então eu passo o valor que deveria estar
                                                                      depois de multiplicar a velavidade na função 'burstOfSpeed'
                                                                     */
         //print(gameObject.GetInstanceID());
         playerDict.Add(gameObject.GetInstanceID(), gameObject);
+    }
+
+    private void OnEnable()
+    {
+        if (GameManagerBehaviour.instance.nameChosen)
+        {
+            foodGrabed = 0;
+            timeOnLeaderboard = 0;
+            topPosition = 100;
+            NPCsEaten = 0;
+            startingTime = Time.time;
+            dividing = false;
+            GameManagerBehaviour.instance.nameChosen = false;
+        }
     }
 
     void Update()
@@ -64,19 +70,20 @@ public class PlayerBehaviour : MonoBehaviour
     public void divideItself(Transform individualTransform)
     {
         GameObject playerClone = GameManagerBehaviour.instance.createClone(individualTransform.position);
-        playerClone.transform.localScale = individualTransform.localScale / 2;
+        playerClone.transform.localScale = individualTransform.localScale / 1.3f;
         playerClone.tag = "PlayerClone";
         playerClone.GetComponent<PlayerBehaviour>().speed = 15f;
-    
         StartCoroutine(burstOfSpeed(playerClone));
-        individualTransform.localScale -= individualTransform.localScale / 2;
+        individualTransform.localScale = individualTransform.localScale / 1.3f;
     }
 
     public IEnumerator burstOfSpeed(GameObject clone)
     {
         clone.GetComponent<PlayerBehaviour>().speed *= 3;
         yield return new WaitForSecondsRealtime(.2f);
-        clone.GetComponent<PlayerBehaviour>().speed /= 3;
+        // If para não dar erro quando o clone é arremessado no inimigo
+        if (clone != null)
+            clone.GetComponent<PlayerBehaviour>().speed /= 3;
     }
 
     public void divideIntoSix(Transform mainPlayer)
@@ -97,13 +104,13 @@ public class PlayerBehaviour : MonoBehaviour
         if (collision.collider.name == "Food(Clone)")
         {
             collision.gameObject.SetActive(false);
-            FoodSpawnerBehaviour.instance.reactivateFood();
+            SpawnerBehaviour.instance.reactivateFood();
             foodGrabed += 1;
             tm.localScale += new Vector3(1f,1f);
-            //highestMass = highestMass > tm.localScale.x ? highestMass : tm.localScale.x;
             GameManagerBehaviour.instance.updateFoodCounterUI();
             GameManagerBehaviour.instance.increaseCameraSize();
             GameManagerBehaviour.instance.addToList(nickName);
+            GameManagerBehaviour.instance.updateHighScoreTable();
         }
 
         if (collision.collider.name == "NPC(Clone)" || collision.collider.name == "NPC")
@@ -114,8 +121,9 @@ public class PlayerBehaviour : MonoBehaviour
                 NPCsEaten += 1;
                 tm.localScale += npcTm.localScale/3;
                 collision.gameObject.SetActive(false);
-                NPCSpawnerBehaviour.instance.reactivateNPC();
+                SpawnerBehaviour.instance.reactivateNPC();
                 GameManagerBehaviour.instance.addToList(nickName, (int)tm.localScale.x/3);
+                GameManagerBehaviour.instance.updateHighScoreTable();
             }
             else if (tm.localScale.x * 1.3 < (npcTm.localScale.x))
             {
@@ -124,14 +132,24 @@ public class PlayerBehaviour : MonoBehaviour
                 if (playerDict.Count == 1)
                 {
                     startingTime = (Time.time - startingTime);
-                    Destroy(gameObject);
-                    GameManagerBehaviour.instance.onGameOver(collision.gameObject);
+                    //Destroy(gameObject);
+                    gameObject.SetActive(false);
+                    GameManagerBehaviour.instance.onGameOver();
+                    GameManagerBehaviour.instance.resetIndividualScore(nickName);
+                    GameManagerBehaviour.instance.updateHighScoreTable();
                 }
                 else
                 {
                     playerDict.Remove(gameObject.GetInstanceID());
                     GameManagerBehaviour.instance.changeCameraFollow(playerDict.First().Value.transform);
-                    Destroy(gameObject);
+                    if (gameObject.CompareTag("PlayerClone"))
+                    {
+                        Destroy(gameObject);
+                    }
+                    else
+                    {
+                        gameObject.SetActive(false);
+                    }
                 }
             }
         }
@@ -143,17 +161,17 @@ public class PlayerBehaviour : MonoBehaviour
         Transform colTransform = collision.GetComponent<Transform>();
         if (collision.name == "HidingSpot(Clone)")
         {
-            print("banana");
-            if (tm.localScale.x > (colTransform.localScale.x) * 1.1)
+            // Caso o player seja muito maior que o 'HidingSpot' não acontece a divisão
+            if (tm.localScale.x > (colTransform.localScale.x) * 1.6)
+            {
+                Destroy(colTransform.gameObject);
+                tm.localScale += colTransform.localScale / 2;
+            }
+            else if (tm.localScale.x > (colTransform.localScale.x) * 1.1)
             {
                 Destroy(colTransform.gameObject);
                 divideIntoSix(tm);
                 tm.localScale = tm.localScale / 6;
-            }
-            else if (tm.localScale.x > (colTransform.localScale.x) * 1.6)
-            {
-                Destroy(colTransform.gameObject);
-                tm.localScale += colTransform.localScale / 2;
             }
         }
     }

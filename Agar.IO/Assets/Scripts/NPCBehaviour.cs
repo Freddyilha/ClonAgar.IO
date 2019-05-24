@@ -46,10 +46,11 @@ public class NPCBehaviour : MonoBehaviour
         if (collision.collider.name == "Food(Clone)")
         {
             collision.gameObject.SetActive(false);
-            FoodSpawnerBehaviour.instance.reactivateFood();
+            SpawnerBehaviour.instance.reactivateFood();
             tm.localScale += new Vector3(1f, 1f);
             goingForFood = false;
             GameManagerBehaviour.instance.addToList(NPCNickName);
+            GameManagerBehaviour.instance.updateHighScoreTable();
         }
 
         if (collision.collider.CompareTag("Wall"))
@@ -61,15 +62,18 @@ public class NPCBehaviour : MonoBehaviour
             {
                 tm.localScale += npcTm.localScale / 3;
                 collision.gameObject.SetActive(false);
-                NPCSpawnerBehaviour.instance.reactivateNPC();
+                SpawnerBehaviour.instance.reactivateNPC();
                 GameManagerBehaviour.instance.addToList(NPCNickName, (int)tm.localScale.x / 3);
+                GameManagerBehaviour.instance.updateHighScoreTable();
             }
             else if (tm.localScale.x * 1.3 < (npcTm.localScale.x))
             {
                 npcTm.localScale += tm.localScale / 3;
+                GameManagerBehaviour.instance.resetIndividualScore(NPCNickName);
                 gameObject.SetActive(false);
-                NPCSpawnerBehaviour.instance.reactivateNPC();
+                SpawnerBehaviour.instance.reactivateNPC();
                 GameManagerBehaviour.instance.addToList(collision.gameObject.GetComponent<NPCBehaviour>().NPCNickName, (int)tm.localScale.x / 3);
+                GameManagerBehaviour.instance.updateHighScoreTable();
             }
         }
     }

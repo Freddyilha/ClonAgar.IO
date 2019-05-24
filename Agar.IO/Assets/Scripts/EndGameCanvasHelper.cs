@@ -27,7 +27,6 @@ public class EndGameCanvasHelper : MonoBehaviour
 
     public void onRestartButtonPressed()
     {
-
-        GameManagerBehaviour.instance.startNewGame("teste");
+        StartCoroutine(GameManagerBehaviour.instance.waitForLogin());
     }
 }
